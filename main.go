@@ -6,6 +6,10 @@ import (
 
 	"io"
 
+	"runtime"
+
+	"fmt"
+
 	"github.com/biogo/hts/bam"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -17,6 +21,8 @@ func main() {
 	bamFile := app.Arg("bamfile", "input bam file").Required().String()
 	outFile := app.Arg("outfile", "outfile").Required().String()
 	kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	f, err := os.Open(*bamFile)
 	if err != nil {
@@ -40,6 +46,8 @@ func main() {
 		panic(err)
 	}
 
+	total := 0
+	filtered := 0
 	for {
 		rec, err := bamReader.Read()
 		if err != nil {
@@ -54,7 +62,12 @@ func main() {
 			editDistance := v.(uint8)
 			if int(editDistance) <= *maxEditDistance {
 				bamWriter.Write(rec)
+			} else {
+				filtered++
 			}
 		}
+		total++
 	}
+
+	fmt.Printf("Total: %d Filtered: %d\n", total, filtered)
 }
